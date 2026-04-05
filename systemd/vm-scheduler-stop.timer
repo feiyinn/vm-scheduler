@@ -1,0 +1,10 @@
+[Unit]
+Description=Timer for trading-day VM shutdown
+
+[Timer]
+OnCalendar=Mon..Fri 15:05
+Persistent=true
+Unit=vm-scheduler-stop.service
+
+[Install]
+WantedBy=timers.target

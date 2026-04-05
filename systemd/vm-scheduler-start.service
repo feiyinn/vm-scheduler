@@ -1,0 +1,12 @@
+[Unit]
+Description=Start trading-day VMs via vm-scheduler
+After=network-online.target libvirtd.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/opt/vm-scheduler/.venv/bin/vm-scheduler start --config /etc/vm-scheduler/config.yaml
+
+[Install]
+WantedBy=multi-user.target

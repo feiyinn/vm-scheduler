@@ -1,0 +1,40 @@
+# 安装后请复制到 /etc/vm-scheduler/config.yaml 并按实际环境修改。
+
+database:
+  host: "treasure-code-simu"
+  port: 15432
+  user: "trader"
+  password: "pg4trade"
+  database: "trading_db"
+  schema: "trading"
+
+  # 使用参数 today，格式为 YYYY-MM-DD。
+  # 参考 /home/yinfei/MyProjects/treasure-code/src/utils/check_trading_day.py
+  # 要求 SH 和 SZ 同时为交易日才返回 true。
+  trade_day_sql: |
+    SELECT bool_and(is_trading_day)
+    FROM trading.md_trading_calendar
+    WHERE trade_date = %(today)s
+      AND exchange IN ('SH', 'SZ')
+
+vm_groups:
+  start_targets:
+    - ths-books
+    - ths-books-prod
+  stop_targets:
+    - ths-books
+    - ths-books-prod
+
+virsh:
+  binary: "/usr/bin/virsh"
+  shutdown_mode: "shutdown"
+  start_mode: "start"
+  timeout_seconds: 120
+  poll_interval_seconds: 5
+
+logging:
+  level: "INFO"
+
+policy:
+  # 数据库查询不到记录时，默认视为非交易日，避免误操作。
+  assume_trade_day_when_missing: false

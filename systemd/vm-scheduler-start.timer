@@ -1,0 +1,10 @@
+[Unit]
+Description=Timer for trading-day VM startup
+
+[Timer]
+OnCalendar=Mon..Fri 08:55
+Persistent=true
+Unit=vm-scheduler-start.service
+
+[Install]
+WantedBy=timers.target
