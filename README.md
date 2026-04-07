@@ -55,6 +55,7 @@ vm-scheduler/
 4. 程序查询交易日历数据库。
 5. 若是交易日，则依次执行 `virsh start` / `virsh shutdown`。
 6. 若非交易日，则记录日志并跳过。
+7. 若配置了多 VM 间隔，则在相邻 VM 操作之间等待指定秒数，降低宿主机瞬时负载。
 
 ## 配置
 
@@ -66,6 +67,29 @@ sudo cp config/config.example.yaml /etc/vm-scheduler/config.yaml
 ```
 
 然后按实际情况检查数据库密码、SQL、定时规则和 VM 名称。
+
+你也可以配置多 VM 的统一开关机间隔：
+
+- `virsh.start_interval_seconds`
+- `virsh.stop_interval_seconds`
+
+例如：
+
+```yaml
+virsh:
+  binary: "/usr/bin/virsh"
+  shutdown_mode: "shutdown"
+  start_mode: "start"
+  start_interval_seconds: 60
+  stop_interval_seconds: 30
+  timeout_seconds: 120
+  poll_interval_seconds: 5
+```
+
+这表示：
+
+- 多台 VM 开机时，当前一台启动命令发出后，等待 60 秒再处理下一台
+- 多台 VM 关机时，当前一台关机命令发出后，等待 30 秒再处理下一台
 
 ## 安装
 
@@ -142,6 +166,20 @@ WHERE trade_date = %(today)s
 ```bash
 /opt/vm-scheduler/.venv/bin/vm-scheduler start --config /etc/vm-scheduler/config.yaml --dry-run
 ```
+
+## 多 VM 策略
+
+当前版本支持：
+
+- 所有开机目标使用同一个开机触发时间
+- 所有关机目标使用同一个关机触发时间
+- 多 VM 串行执行，避免并发触发
+- 通过统一间隔配置降低多台 Windows VM 连续启动带来的瞬时冲击
+
+当前版本不支持：
+
+- 每台 VM 单独定义不同 timer 时间
+- 每台 VM 使用不同间隔
 
 ## 后续扩展建议
 

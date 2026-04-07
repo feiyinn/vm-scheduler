@@ -29,6 +29,9 @@ virsh:
   binary: "/usr/bin/virsh"
   shutdown_mode: "shutdown"
   start_mode: "start"
+  # 多台 VM 连续开机/关机时的统一间隔，单位秒。
+  start_interval_seconds: 60
+  stop_interval_seconds: 30
   timeout_seconds: 120
   poll_interval_seconds: 5
 

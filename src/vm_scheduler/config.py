@@ -41,6 +41,8 @@ class VirshConfig:
     binary: str
     shutdown_mode: str
     start_mode: str
+    start_interval_seconds: int
+    stop_interval_seconds: int
     timeout_seconds: int
     poll_interval_seconds: int
 
@@ -106,6 +108,8 @@ def load_config(path: Path = DEFAULT_CONFIG_PATH) -> AppConfig:
             binary=str(virsh.get("binary", "/usr/bin/virsh")),
             shutdown_mode=str(virsh.get("shutdown_mode", "shutdown")),
             start_mode=str(virsh.get("start_mode", "start")),
+            start_interval_seconds=int(virsh.get("start_interval_seconds", 0)),
+            stop_interval_seconds=int(virsh.get("stop_interval_seconds", 0)),
             timeout_seconds=int(virsh.get("timeout_seconds", 120)),
             poll_interval_seconds=int(virsh.get("poll_interval_seconds", 5)),
         ),
