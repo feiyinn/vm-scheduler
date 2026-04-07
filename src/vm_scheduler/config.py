@@ -43,8 +43,6 @@ class VirshConfig:
     start_mode: str
     start_interval_seconds: int
     stop_interval_seconds: int
-    timeout_seconds: int
-    poll_interval_seconds: int
 
 
 @dataclass(slots=True)
@@ -110,8 +108,6 @@ def load_config(path: Path = DEFAULT_CONFIG_PATH) -> AppConfig:
             start_mode=str(virsh.get("start_mode", "start")),
             start_interval_seconds=int(virsh.get("start_interval_seconds", 0)),
             stop_interval_seconds=int(virsh.get("stop_interval_seconds", 0)),
-            timeout_seconds=int(virsh.get("timeout_seconds", 120)),
-            poll_interval_seconds=int(virsh.get("poll_interval_seconds", 5)),
         ),
         logging=LoggingConfig(
             level=str(logging.get("level", "INFO")),

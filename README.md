@@ -4,7 +4,7 @@
 
 当前设计目标：
 
-- 只管理 `ths-books` 和 `ths-books-prod`
+- 支持任意多个 libvirt VM 的统一调度管理
 - 只在交易日执行开关机
 - 使用独立 Git 项目托管全部部署脚本、Python 代码和 `systemd` 模板
 - 后续可以通过自动化部署脚本在不同宿主机上重复安装
@@ -18,7 +18,7 @@
 - 交易日规则：`SH` 与 `SZ` 同日均为交易日
 - 开机时间：`08:55`
 - 关机时间：`15:05`
-- 目标 VM：`ths-books`、`ths-books-prod`
+- 示例目标 VM：`ths-books`、`ths-books-prod`
 
 ## 目录结构
 
@@ -68,6 +68,9 @@ sudo cp config/config.example.yaml /etc/vm-scheduler/config.yaml
 
 然后按实际情况检查数据库密码、SQL、定时规则和 VM 名称。
 
+当前实现支持在 `start_targets` 和 `stop_targets` 中配置任意数量的 VM。
+示例配置默认包含两个 VM，仅作为上线初始样例。
+
 你也可以配置多 VM 的统一开关机间隔：
 
 - `virsh.start_interval_seconds`
@@ -82,8 +85,6 @@ virsh:
   start_mode: "start"
   start_interval_seconds: 60
   stop_interval_seconds: 30
-  timeout_seconds: 120
-  poll_interval_seconds: 5
 ```
 
 这表示：
