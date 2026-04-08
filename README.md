@@ -108,6 +108,51 @@ sudo ./scripts/install.sh
 - `daemon-reload`
 - 启用并启动两个 timer
 
+## 首次上线操作
+
+首次部署后，建议按下面顺序操作。
+
+1. 检查配置文件
+
+```bash
+sudo vi /etc/vm-scheduler/config.yaml
+```
+
+至少确认这些内容：
+
+- PostgreSQL 连接信息是否正确
+- `trade_day_sql` 是否可用于当前数据库
+- `start_targets` 和 `stop_targets` 是否符合预期
+- `start_interval_seconds` 和 `stop_interval_seconds` 是否符合宿主机负载能力
+
+2. 查看当前生效的 timer 文件
+
+```bash
+sudo systemctl cat vm-scheduler-start.timer
+sudo systemctl cat vm-scheduler-stop.timer
+```
+
+3. 查看下一次触发时间
+
+```bash
+systemctl list-timers | grep vm-scheduler
+```
+
+4. 先做 dry-run，确认交易日判断和参数读取正常
+
+```bash
+/opt/vm-scheduler/.venv/bin/vm-scheduler start --config /etc/vm-scheduler/config.yaml --dry-run
+/opt/vm-scheduler/.venv/bin/vm-scheduler stop --config /etc/vm-scheduler/config.yaml --dry-run
+```
+
+5. 查看 service 日志
+
+```bash
+journalctl -u vm-scheduler-start.service -u vm-scheduler-stop.service -n 100 --no-pager
+```
+
+如果以上检查都正常，系统就可以按 timer 自动执行。
+
 ## 卸载
 
 ```bash
@@ -128,17 +173,68 @@ sudo ./scripts/uninstall.sh
 - 开机：工作日 `08:55`
 - 关机：工作日 `15:05`
 
-如果你需要盘后任务，可以直接修改：
+当前时间不是写在 YAML 里，而是写在 `systemd timer` 文件中。
+
+源码模板位置：
 
 - `systemd/vm-scheduler-start.timer`
 - `systemd/vm-scheduler-stop.timer`
 
-然后重新执行安装脚本，或手动复制 unit 并执行：
+当前宿主机实际生效的位置：
+
+- `/etc/systemd/system/vm-scheduler-start.timer`
+- `/etc/systemd/system/vm-scheduler-stop.timer`
+
+例如当前开机 timer 内容是：
+
+```ini
+[Timer]
+OnCalendar=Mon..Fri 08:55
+```
+
+例如当前关机 timer 内容是：
+
+```ini
+[Timer]
+OnCalendar=Mon..Fri 15:05
+```
+
+如果要改时间，推荐这样操作。
+
+1. 修改项目里的模板文件
+
+```bash
+vi systemd/vm-scheduler-start.timer
+vi systemd/vm-scheduler-stop.timer
+```
+
+2. 重新安装
+
+```bash
+sudo ./scripts/install.sh
+```
+
+如果你只是想在当前宿主机快速改时间，也可以直接改系统里的生效文件：
+
+```bash
+sudo vi /etc/systemd/system/vm-scheduler-start.timer
+sudo vi /etc/systemd/system/vm-scheduler-stop.timer
+```
+
+改完后必须执行：
 
 ```bash
 sudo systemctl daemon-reload
 sudo systemctl restart vm-scheduler-start.timer vm-scheduler-stop.timer
 ```
+
+最后检查：
+
+```bash
+systemctl list-timers | grep vm-scheduler
+```
+
+如果不执行 `daemon-reload` 和 `restart timer`，新的时间不会生效。
 
 ## 交易日 SQL 说明
 
@@ -166,6 +262,45 @@ WHERE trade_date = %(today)s
 
 ```bash
 /opt/vm-scheduler/.venv/bin/vm-scheduler start --config /etc/vm-scheduler/config.yaml --dry-run
+```
+
+如果你只想临时手动执行一次关机：
+
+```bash
+/opt/vm-scheduler/.venv/bin/vm-scheduler stop --config /etc/vm-scheduler/config.yaml
+```
+
+如果你想绕过 timer，直接手动触发一次 service：
+
+```bash
+sudo systemctl start vm-scheduler-start.service
+sudo systemctl start vm-scheduler-stop.service
+```
+
+## 常用排查命令
+
+查看 timer 状态：
+
+```bash
+systemctl status vm-scheduler-start.timer vm-scheduler-stop.timer
+```
+
+查看 service 状态：
+
+```bash
+systemctl status vm-scheduler-start.service vm-scheduler-stop.service
+```
+
+查看日志：
+
+```bash
+journalctl -u vm-scheduler-start.service -u vm-scheduler-stop.service -f
+```
+
+检查当前有哪些 VM 正在运行：
+
+```bash
+virsh list --all
 ```
 
 ## 多 VM 策略

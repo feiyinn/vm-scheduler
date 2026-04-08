@@ -2,7 +2,7 @@
 Description=Timer for trading-day VM startup
 
 [Timer]
-OnCalendar=Mon..Fri 08:55
+OnCalendar=Mon..Fri 08:45
 Persistent=true
 Unit=vm-scheduler-start.service
 

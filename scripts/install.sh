@@ -6,6 +6,29 @@ INSTALL_ROOT="/opt/vm-scheduler"
 CONFIG_ROOT="/etc/vm-scheduler"
 SYSTEMD_ROOT="/etc/systemd/system"
 
+find_uv() {
+  if command -v uv >/dev/null 2>&1; then
+    command -v uv
+    return 0
+  fi
+
+  if [[ -n "${SUDO_USER:-}" ]]; then
+    local sudo_user_home
+    sudo_user_home="$(getent passwd "${SUDO_USER}" | cut -d: -f6)"
+    if [[ -n "${sudo_user_home}" && -x "${sudo_user_home}/.local/bin/uv" ]]; then
+      echo "${sudo_user_home}/.local/bin/uv"
+      return 0
+    fi
+  fi
+
+  if [[ -x "/root/.local/bin/uv" ]]; then
+    echo "/root/.local/bin/uv"
+    return 0
+  fi
+
+  return 1
+}
+
 require_command() {
   local cmd="$1"
   if ! command -v "$cmd" >/dev/null 2>&1; then
@@ -18,13 +41,16 @@ require_command python3
 require_command install
 require_command systemctl
 
-if ! command -v uv >/dev/null 2>&1; then
+if ! UV_BIN="$(find_uv)"; then
   echo "Missing required command: uv" >&2
-  echo "Install uv first: https://docs.astral.sh/uv/" >&2
+  echo "Install uv first, or ensure it is visible to sudo." >&2
+  echo "Current user uv path example: ~/.local/bin/uv" >&2
+  echo "Docs: https://docs.astral.sh/uv/" >&2
   exit 1
 fi
 
 echo "Installing vm-scheduler into ${INSTALL_ROOT}"
+echo "Using uv: ${UV_BIN}"
 
 install -d -m 0755 "${INSTALL_ROOT}"
 install -d -m 0755 "${INSTALL_ROOT}/src"
@@ -42,8 +68,8 @@ else
 fi
 
 cd "${INSTALL_ROOT}"
-uv venv .venv
-uv pip install --python "${INSTALL_ROOT}/.venv/bin/python" .
+"${UV_BIN}" venv .venv
+"${UV_BIN}" pip install --python "${INSTALL_ROOT}/.venv/bin/python" .
 
 install -m 0644 "${PROJECT_ROOT}/systemd/vm-scheduler-start.service" "${SYSTEMD_ROOT}/vm-scheduler-start.service"
 install -m 0644 "${PROJECT_ROOT}/systemd/vm-scheduler-start.timer" "${SYSTEMD_ROOT}/vm-scheduler-start.timer"
